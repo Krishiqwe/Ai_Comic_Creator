@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>💥 AI Comic Creator</title>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --yellow:  #FFE135;
+    --red:     #FF3D00;
+    --dark:    #111111;
+    --white:   #FFFFFF;
+    --cream:   #FFFDE7;
+    --blue:    #1565C0;
+    --green:   #2E7D32;
+    --panel1:  #FF6B6B;
+    --panel2:  #4ECDC4;
+    --panel3:  #FFE66D;
+    --panel4:  #A8E6CF;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Comic Neue', cursive;
+    background: var(--cream);
+    background-image: radial-gradient(circle, #fdd83525 1.5px, transparent 1.5px);
+    background-size: 22px 22px;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--dark);
+    border-bottom: 4px solid var(--red);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 4px 0 var(--red);
+  }
+  header .logo { font-size: 40px; }
+  header h1 {
+    font-family: 'Bangers', cursive;
+    font-size: 32px;
+    color: var(--yellow);
+    letter-spacing: 4px;
+    text-shadow: 3px 3px 0 var(--red);
+    line-height: 1;
+  }
+  header p { color: #aaa; font-size: 12px; margin-top: 3px; letter-spacing: 1px; }
+  .badges { margin-left: auto; display: flex; gap: 8px; }
+  .badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-family: 'Bangers', cursive;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    color: #fff;
+  }
+
+  /* ── LAYOUT ── */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 20px;
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: #fff;
+    border: 3px solid var(--dark);
+    border-radius: 6px;
+    box-shadow: 5px 5px 0 var(--dark);
+    overflow: hidden;
+  }
+  .card-header {
+    background: var(--dark);
+    color: var(--yellow);
+    font-family: 'Bangers', cursive;
+    font-size: 18px;
+    letter-spacing: 2px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── CHATBOT ── */
+  #chat-messages {
+    height: 340px;
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #fafafa;
+  }
+  .msg {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    animation: msgPop 0.25s ease;
+  }
+  .msg.bot  { flex-direction: row; }
+  .msg.user { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    border: 2px solid var(--dark);
+    flex-shrink: 0;
+  }
+  .msg.bot  .avatar { background: var(--yellow); }
+  .msg.user .avatar { background: var(--red); }
+
+  .bubble {
+    max-width: 78%;
+    padding: 8px 14px;
+    border-radius: 16px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    border: 2px solid var(--dark);
+    box-shadow: 2px 2px 0 var(--dark);
+  }
+  .msg.bot  .bubble { background: #fff;       border-bottom-left-radius: 4px; }
+  .msg.user .bubble { background: var(--red); color: #fff; border-bottom-right-radius: 4px; }
+
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    border-top: 2px solid #eee;
+    background: #fff;
+  }
+  .chat-input-row input {
+    flex: 1;
+    border: 2px solid var(--dark);
+    border-radius: 20px;
+    padding: 8px 14px;
+    font-family: 'Comic Neue', cursive;
+    font-size: 14px;
+    background: var(--cream);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .chat-input-row input:focus { border-color: var(--red); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family: 'Bangers', cursive;
+    letter-spacing: 1px;
+    border: 2.5px solid var(--dark);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    box-shadow: 3px 3px 0 var(--dark);
+  }
+  .btn:hover:not(:disabled) { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--dark); }
+  .btn:active:not(:disabled){ transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--dark); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-send  { background: var(--red); color:#fff; padding:8px 14px; font-size:15px; border-radius:20px; }
+  .btn-gen   { background: var(--red); color:#fff; padding:11px 24px; font-size:20px; width:100%; }
+  .btn-small { background: var(--dark); color:#fff; padding:5px 12px; font-size:13px; border-radius:20px; }
+
+  /* ── RIGHT PANEL ── */
+  .right-col { display: flex; flex-direction: column; gap: 20px; }
+
+  /* ── FORM ── */
+  .form-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+  label { font-family:'Bangers',cursive; font-size:14px; letter-spacing:1px; color:var(--dark); }
+
+  .idea-box {
+    width: 100%;
+    border: 2px solid var(--dark);
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-family: 'Comic Neue', cursive;
+    font-size: 14px;
+    background: var(--cream);
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+    min-height: 80px;
+  }
+  .idea-box:focus { border-color: var(--red); }
+
+  .style-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .style-btn {
+    border: 2px solid var(--dark);
+    border-radius: 6px;
+    padding: 8px;
+    cursor: pointer;
+    text-align: center;
+    font-family: 'Bangers', cursive;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    background: #fff;
+    transition: all 0.15s;
+    box-shadow: 2px 2px 0 var(--dark);
+  }
+  .style-btn:hover    { transform: translateY(-2px); }
+  .style-btn.selected { background: var(--red); color: #fff; box-shadow: 3px 3px 0 var(--dark); }
+
+  /* ── COMIC OUTPUT ── */
+  #comic-section { display: none; }
+  #comic-title {
+    font-family: 'Bangers', cursive;
+    font-size: 28px;
+    letter-spacing: 4px;
+    color: var(--yellow);
+    text-align: center;
+    background: var(--dark);
+    padding: 12px 24px;
+    border-radius: 4px;
+    text-shadow: 3px 3px 0 var(--red);
+    border: 3px solid var(--red);
+    box-shadow: 5px 5px 0 var(--red);
+    animation: titlePop 0.4s ease;
+  }
+
+  .comic-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    background: var(--dark);
+    border: 4px solid var(--dark);
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 6px 6px 0 var(--red);
+  }
+
+  .panel {
+    border: 3px solid var(--dark);
+    border-radius: 4px;
+    overflow: hidden;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    animation: panelPop 0.5s ease both;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+  }
+  .panel:nth-child(1){animation-delay:0s;   --ac: var(--panel1);}
+  .panel:nth-child(2){animation-delay:0.1s; --ac: var(--panel2);}
+  .panel:nth-child(3){animation-delay:0.2s; --ac: var(--panel3);}
+  .panel:nth-child(4){animation-delay:0.3s; --ac: var(--panel4);}
+
+  .panel-caption {
+    background: var(--ac);
+    color: #fff;
+    font-family: 'Bangers', cursive;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    padding: 5px 10px;
+    border-bottom: 2px solid var(--dark);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .panel-num {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--dark);
+    color: #fff;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .panel-img {
+    position: relative;
+    background: #eee;
+    min-height: 160px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .panel-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .panel-img .loading-overlay {
+    position: absolute; inset: 0;
+    background: #f5f5f0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 8px;
+  }
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--ac);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  .loading-overlay span {
+    font-family: 'Bangers', cursive;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: #888;
+  }
+
+  .panel-dialogue {
+    background: #fff;
+    border-top: 2px solid var(--ac);
+    padding: 8px 12px;
+    font-size: 13px;
+    font-style: italic;
+    color: #333;
+    min-height: 40px;
+    display: flex; align-items: center;
+  }
+
+  /* ── STATUS BAR ── */
+  #status {
+    font-family: 'Bangers', cursive;
+    font-size: 15px;
+    letter-spacing: 1px;
+    color: var(--blue);
+    text-align: center;
+    min-height: 24px;
+    animation: shimmer 1.2s infinite;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes msgPop   { from{transform:scale(0.85);opacity:0} to{transform:scale(1);opacity:1} }
+  @keyframes panelPop { from{transform:scale(0.8) rotate(-2deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+  @keyframes titlePop { from{transform:translateY(-12px);opacity:0} to{transform:translateY(0);opacity:1} }
+  @keyframes spin     { to{transform:rotate(360deg)} }
+  @keyframes shimmer  { 0%,100%{opacity:0.5} 50%{opacity:1} }
+
+  /* scrollbar */
+  #chat-messages::-webkit-scrollbar { width: 4px; }
+  #chat-messages::-webkit-scrollbar-track { background: #f0f0f0; }
+  #chat-messages::-webkit-scrollbar-thumb { background: var(--red); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">💥</div>
+  <div>
+    <h1>AI COMIC CREATOR</h1>
+    <p>Gemini API &nbsp;+&nbsp; Pollinations.AI &nbsp;·&nbsp; College Project Demo</p>
+  </div>
+  <div class="badges">
+    <span class="badge" style="background:#1565C0">Gemini AI</span>
+    <span class="badge" style="background:#2E7D32">Pollinations</span>
+    <span class="badge" style="background:#6A1B9A">Flask</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- LEFT — CHATBOT -->
+  <div>
+    <div class="card">
+      <div class="card-header">🤖 &nbsp;COMIC IDEA CHATBOT</div>
+      <div id="chat-messages">
+        <div class="msg bot">
+          <div class="avatar">🤖</div>
+          <div class="bubble">Hey! I'm your Comic Idea Assistant 🎨 Tell me what kind of comic you want to make — characters, setting, genre — anything!</div>
+        </div>
+      </div>
+      <div class="chat-input-row">
+        <input id="chat-input" type="text" placeholder="Type your idea..." onkeydown="if(event.key==='Enter') sendChat()"/>
+        <button class="btn btn-send" onclick="sendChat()">➤</button>
+      </div>
+    </div>
+
+    <!-- Quick prompts -->
+    <div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px;">
+      <span style="font-family:'Bangers',cursive;font-size:13px;color:#666;letter-spacing:1px;align-self:center;">TRY:</span>
+      <button class="btn btn-small" onclick="setPrompt('A cat who secretly runs a tech startup')">🐱 Cat startup</button>
+      <button class="btn btn-small" onclick="setPrompt('A wizard who is bad at magic')">🧙 Bad wizard</button>
+      <button class="btn btn-small" onclick="setPrompt('Two robots falling in love')">🤖 Robot love</button>
+      <button class="btn btn-small" onclick="setPrompt('A superhero afraid of heights')">🦸 Scared hero</button>
+    </div>
+  </div>
+
+  <!-- RIGHT — GENERATOR + OUTPUT -->
+  <div class="right-col">
+
+    <!-- Generator form -->
+    <div class="card">
+      <div class="card-header">⚡ &nbsp;GENERATE YOUR COMIC</div>
+      <div class="form-body">
+        <div>
+          <label>📖 STORY IDEA</label>
+          <textarea id="story-input" class="idea-box" placeholder="Your comic idea goes here. Chat with the bot or type directly!"></textarea>
+        </div>
+        <div>
+          <label>🎨 ART STYLE</label>
+          <div class="style-grid">
+            <div class="style-btn selected" data-style="superhero"  onclick="selectStyle(this)">🦸 Superhero</div>
+            <div class="style-btn"          data-style="manga"      onclick="selectStyle(this)">⛩️ Manga</div>
+            <div class="style-btn"          data-style="cartoon"    onclick="selectStyle(this)">🎨 Cartoon</div>
+            <div class="style-btn"          data-style="watercolor" onclick="selectStyle(this)">🖌️ Watercolor</div>
+          </div>
+        </div>
+        <div id="status"></div>
+        <button class="btn btn-gen" id="gen-btn" onclick="generateComic()">⚡ MAKE MY COMIC!</button>
+      </div>
+    </div>
+
+    <!-- Comic output -->
+    <div id="comic-section">
+      <div id="comic-title">LOADING...</div>
+      <div style="height:12px"></div>
+      <div class="comic-grid" id="comic-grid"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ── STATE ────────────────────────────────────────────────────────────────
+  let chatHistory  = [];
+  let selectedStyle = "superhero";
+
+  // ── CHATBOT ──────────────────────────────────────────────────────────────
+  async function sendChat() {
+    const input = document.getElementById("chat-input");
+    const text  = input.value.trim();
+    if (!text) return;
+    input.value = "";
+
+    addMessage("user", text);
+    chatHistory.push({role:"user", text});
+
+    // Typing indicator
+    const typingId = addMessage("bot", "...", true);
+
+    const resp = await fetch("/chat", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({message: text, history: chatHistory})
+    });
+    const data = await resp.json();
+
+    document.getElementById(typingId).remove();
+    addMessage("bot", data.reply);
+    chatHistory.push({role:"model", text: data.reply});
+
+    // If idea is ready, autofill the story box
+    if (data.idea) {
+      document.getElementById("story-input").value = data.idea;
+      addMessage("bot", "✅ I've filled in your idea above! Pick an art style and hit Generate! 🎉");
+    }
+  }
+
+  function addMessage(role, text, isTyping=false) {
+    const box = document.getElementById("chat-messages");
+    const id  = "msg-" + Date.now();
+    const div = document.createElement("div");
+    div.className = `msg ${role}`;
+    div.id = id;
+    div.innerHTML = `
+      <div class="avatar">${role==="bot"?"🤖":"😊"}</div>
+      <div class="bubble">${isTyping ? '<span style="opacity:0.5;font-style:italic">typing...</span>' : text}</div>
+    `;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return id;
+  }
+
+  function setPrompt(text) {
+    document.getElementById("chat-input").value = text;
+    document.getElementById("chat-input").focus();
+  }
+
+  // ── STYLE PICKER ─────────────────────────────────────────────────────────
+  function selectStyle(el) {
+    document.querySelectorAll(".style-btn").forEach(b => b.classList.remove("selected"));
+    el.classList.add("selected");
+    selectedStyle = el.dataset.style;
+  }
+
+  // ── COMIC GENERATION ─────────────────────────────────────────────────────
+  async function generateComic() {
+    const prompt = document.getElementById("story-input").value.trim();
+    if (!prompt) { alert("Please enter a story idea first!"); return; }
+
+    const btn    = document.getElementById("gen-btn");
+    const status = document.getElementById("status");
+    btn.disabled = true;
+    btn.textContent = "⏳ CREATING...";
+
+    // Show comic section with loading panels
+    document.getElementById("comic-section").style.display = "block";
+    document.getElementById("comic-title").textContent = "WRITING YOUR COMIC...";
+    renderLoadingPanels();
+
+    status.textContent = "🧠 Gemini is writing the script...";
+
+    try {
+      const resp = await fetch("/generate", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({prompt, style: selectedStyle})
+      });
+      const data = await resp.json();
+
+      status.textContent = "🎨 Rendering panels...";
+      document.getElementById("comic-title").textContent = data.title;
+      renderPanels(data.panels);
+      status.textContent = "✅ Your comic is ready!";
+
+    } catch(e) {
+      status.textContent = "❌ Error! Try again.";
+      document.getElementById("comic-section").style.display = "none";
+    }
+
+    btn.disabled = false;
+    btn.textContent = "⚡ MAKE MY COMIC!";
+  }
+
+  function renderLoadingPanels() {
+    const grid = document.getElementById("comic-grid");
+    grid.innerHTML = "";
+    const colors = ["var(--panel1)","var(--panel2)","var(--panel3)","var(--panel4)"];
+    for (let i=0; i<4; i++) {
+      grid.innerHTML += `
+        <div class="panel" style="--ac:${colors[i]}">
+          <div class="panel-caption">
+            <span>Loading...</span>
+            <div class="panel-num">${i+1}</div>
+          </div>
+          <div class="panel-img" style="min-height:160px">
+            <div class="loading-overlay">
+              <div class="spinner"></div>
+              <span>DRAWING...</span>
+            </div>
+          </div>
+          <div class="panel-dialogue" style="opacity:0.4;font-style:italic">loading dialogue...</div>
+        </div>`;
+    }
+  }
+
+  function renderPanels(panels) {
+    const grid   = document.getElementById("comic-grid");
+    const colors = ["var(--panel1)","var(--panel2)","var(--panel3)","var(--panel4)"];
+    grid.innerHTML = "";
+
+    panels.forEach((p, i) => {
+      const div = document.createElement("div");
+      div.className = "panel";
+      div.style.cssText = `--ac:${colors[i]}`;
+      div.innerHTML = `
+        <div class="panel-caption">
+          <span>${p.caption || "Panel " + (i+1)}</span>
+          <div class="panel-num">${i+1}</div>
+        </div>
+        <div class="panel-img" style="min-height:180px;position:relative;">
+          <div class="loading-overlay" id="spinner-${i}">
+            <div class="spinner"></div>
+            <span id="spin-label-${i}">DRAWING...</span>
+          </div>
+          <img id="img-${i}" src="" alt="panel ${i+1}"
+               style="display:none;width:100%;height:100%;object-fit:cover;"
+               onload="this.style.display='block'; document.getElementById('spinner-${i}').style.display='none';"
+               onerror="retryImage(${i}, this)" />
+        </div>
+        <div class="panel-dialogue">${p.dialogue ? `"${p.dialogue}"` : ""}</div>
+      `;
+      grid.appendChild(div);
+
+      // Start loading via proxy (same-origin, no CORS issue)
+      const img = document.getElementById(`img-${i}`);
+      img._url  = p.image_url;
+      img._attempts = 0;
+      img.src   = p.image_url + "&t=" + Date.now();
+    });
+
+    document.getElementById("comic-section").scrollIntoView({behavior:"smooth"});
+  }
+
+  function retryImage(index, imgEl) {
+    imgEl._attempts = (imgEl._attempts || 0) + 1;
+    const label = document.getElementById(`spin-label-${index}`);
+
+    if (imgEl._attempts >= 5) {
+      document.getElementById(`spinner-${index}`).innerHTML =
+        '<span style="font-size:11px;color:#c00;text-align:center;padding:8px;">❌ Image failed.<br>Pollinations is busy.</span>';
+      return;
+    }
+
+    const wait = imgEl._attempts * 10; // 10s, 20s, 30s, 40s
+    label.textContent = `RETRY ${imgEl._attempts}/4 in ${wait}s...`;
+
+    setTimeout(() => {
+      label.textContent = `RETRY ${imgEl._attempts}/4...`;
+      imgEl.src = imgEl._url + "&t=" + Date.now() + "&r=" + imgEl._attempts;
+    }, wait * 1000);
+  }
+</script>
+</body>
+</html>
